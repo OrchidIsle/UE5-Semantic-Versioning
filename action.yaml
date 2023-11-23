@@ -1,7 +1,10 @@
 name: 'Get Project Version and Build Number'
 description: 'Fetches tags and calculates version and build number from an INI file.'
 inputs:
-  ini_file_path:
+  BUILD_PREFIX:
+    description: 'The semantic versioning prefix to apply to the build. (dev, alpha, beta, rc, etc)'
+    required: true
+  INI_FILE_PATH:
     description: 'Full path to the INI file including the workspace path.'
     required: true
 runs:
@@ -11,7 +14,7 @@ runs:
         git fetch --tags
         $tags = git tag --sort=-v:refname
         
-        $iniPath = "${{ inputs.ini_file_path }}"
+        $iniPath = "${{ inputs.INI_FILE_PATH }}"
         $content = Get-Content $iniPath -Raw       
         $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+)'
         if ($content -match $semVerPattern) {
@@ -40,7 +43,7 @@ runs:
             $newVersion = $latestTag
           }
           
-          $buildId = "$newVersion-dev$commitCount"
+          $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
           echo "BUILD_ID=$buildId" >> $env:GITHUB_ENV
         } else {
           Write-Error "Version not found in INI file."
