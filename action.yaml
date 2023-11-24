@@ -62,4 +62,4 @@ runs:
           Write-Error "Version not found in INI file."
           exit 1
         }
-      shell: pwsh
+      shell: powershell
