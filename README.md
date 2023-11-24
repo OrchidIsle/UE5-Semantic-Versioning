@@ -34,3 +34,16 @@ To use this action in your workflow, add the following step:
   with:
     BUILD_PREFIX: dev
     INI_FILE_PATH: ${{ github.workspace }}/MyGameFolder/Config/DefaultGame.ini
+```
+
+## Typical Usage
+A typical use case is to set the project settings version to the version you plan to release next. For example, if you just released 1.2.0, set the project settings version to 1.3.0. During CI, if there have been commits since the 1.2.0 tag, the action would output something like 1.3.0-dev5, assuming there were 5 commits since the last tag.
+
+## Additional Information
+Ensure that the actions/checkout step is used before this action to clone the repository into the GitHub Actions runner.
+The action is designed for use with Unreal Engine projects but can be adapted for other environments that use INI files for version management.
+It's important to maintain consistent tagging and versioning within your project to ensure accurate build numbers.
+The action will fail if the version is not found in the INI file, so it's crucial to update the version in the INI file as part of your development process.
+For more information on Semantic Versioning, visit SemVer.org.
+
+This README provides a clear guide on how to use the action, its requirements, and typical usage scenarios. It also provides some additional context and advice for maintaining consistent versioning within a project.
