@@ -39,8 +39,17 @@ runs:
           $commitCount = & git rev-list --count "${latestTag}..HEAD"
           
           $newVersion = $versionFromIni
-          if ($latestTag -ne "0.0.0" -and [Version]$latestTag -gt [Version]$versionFromIni) {
-            $newVersion = $latestTag
+          if ($latestTag -ne "0.0.0") {
+            if ([Version]$latestTag -gt [Version]$versionFromIni) {
+              $newVersion = $latestTag
+            } elseif ([Version]$latestTag -eq [Version]$versionFromIni) {
+              # Auto-increment the patch number if versions match and commit count is more than 0
+              if ($commitCount -gt 0) {
+                $versionParts = $newVersion -split '\.'
+                $versionParts[2] = [int]$versionParts[2] + 1
+                $newVersion = $versionParts -join '.'
+              }
+            }
           }
           
           $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
