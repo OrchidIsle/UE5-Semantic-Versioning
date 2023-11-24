@@ -30,11 +30,35 @@ To use this action in your workflow, add the following step:
 
 ```yaml
 - name: Set Project Version and Build Number
-  uses: OrchidIsle/UE5-Semantic-Versioning@main
+  uses: OrchidIsle/UE5-Semantic-Versioning@latest
   with:
     BUILD_PREFIX: dev
     INI_FILE_PATH: ${{ github.workspace }}/MyGameFolder/Config/DefaultGame.ini
 ```
+
+## Outputs
+Upon completion, this GitHub Action provides the following outputs, which are set as environment variables. These variables are accessible to subsequent steps in your workflow using the ${{ env.VAR_NAME }} syntax.
+
+- BUILD_ID: This is the constructed identifier for the build. It encompasses the computed version number appended with the build prefix and the number of commits since the last version tag. For instance, 1.2.3-dev4 would indicate that there have been four commits since the version 1.2.3 was tagged, and the build is a development (dev) version.
+- VERSION: Reflects the forthcoming release version in the Major.Minor.Patch format based on Semantic Versioning. This version is derived from the project settings and is potentially incremented (the patch number) if the current commit matches the latest version tag in the repository.
+
+To utilize these outputs in subsequent steps of your workflow, reference them as shown in the following examples:
+
+For the build ID:
+
+```yaml
+- name: Use Build ID
+  run: echo "The build ID is ${{ env.BUILD_ID }}"
+```
+
+For the version:
+
+```yaml
+- name: Use Version
+  run: echo "The next version is ${{ env.VERSION }}"
+```
+
+By integrating these environment variables into your CI/CD pipeline, you can dynamically manage build and release processes based on the versioning information provided by this action.
 
 ## Typical Usage
 A typical use case is to set the project settings version to the version you plan to release next. For example, if you just released 1.2.0, set the project settings version to 1.3.0. During CI, if there have been commits since the 1.2.0 tag, the action would output something like 1.3.0-dev5, assuming there were 5 commits since the last tag.
