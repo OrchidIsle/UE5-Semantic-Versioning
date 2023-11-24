@@ -58,6 +58,8 @@ runs:
           
           $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
           echo "BUILD_ID=$buildId" >> $env:GITHUB_ENV
+          Write-Host "Version set to: $newVersion"
+          Write-Host "Build ID set to: $buildId"
         } else {
           Write-Error "Version not found in INI file."
           exit 1
