@@ -1,5 +1,9 @@
 name: 'Get Project Version and Build Number'
 description: 'Fetches tags and calculates version and build number from an INI file.'
+author: 'Orchid Isle Games'
+branding:
+  icon: 'anchor'
+  color: 'green' # You can use a specific shade of green like '008000' if you prefer
 inputs:
   BUILD_PREFIX:
     description: 'The semantic versioning prefix to apply to the build. (dev, alpha, beta, rc, etc)'
