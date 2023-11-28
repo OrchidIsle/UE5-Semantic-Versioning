@@ -22,7 +22,8 @@ The action performs the following steps:
 ## Inputs
 
 - `BUILD_PREFIX`: The prefix to apply to the build number (e.g., `dev`, `alpha`, `beta`, `rc`). This should align with your development stage.
-- `INI_FILE_PATH`: The full path to the INI file, including the path to the GitHub workspace. The INI file should contain the project version in the correct format.
+- `CONFIG_DIR_PATH`: The full path to the `MyProject/Config` folder, including the path to the GitHub workspace. The folder should contain the DefaultGame.ini file.
+- `ADD_BUILD_INFO`: Adds a `BuildInfo.ini` file that contains the Build ID to the `MyProject/Config` folder.
 
 ## Using the Action
 
@@ -33,7 +34,8 @@ To use this action in your workflow, add the following step:
   uses: OrchidIsle/UE5-Semantic-Versioning@latest
   with:
     BUILD_PREFIX: dev
-    INI_FILE_PATH: ${{ github.workspace }}/MyGameFolder/Config/DefaultGame.ini
+    CONFIG_DIR_PATH: ${{ github.workspace }}/MyGameFolder/Config
+    ADD_BUILD_INFO: true
 ```
 
 ## Outputs
