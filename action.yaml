@@ -1,4 +1,4 @@
-name: 'Get Project Version and Build Number'
+name: 'UE5-Semantic-Versioning'
 description: 'Fetches tags and calculates version and build number from an INI file.'
 author: 'Orchid Isle Games'
 branding:
