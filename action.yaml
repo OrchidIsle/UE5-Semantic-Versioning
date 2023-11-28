@@ -8,9 +8,12 @@ inputs:
   BUILD_PREFIX:
     description: 'The semantic versioning prefix to apply to the build. (dev, alpha, beta, rc, etc)'
     required: true
-  INI_FILE_PATH:
-    description: 'Full path to the INI file including the workspace path.'
+  CONFIG_DIR_PATH:
+    description: 'Full path to the MyProject/Config directory.'
     required: true
+  ADD_BUILD_INFO:
+    description: 'Add BuildInfo.ini (Contains build id) to config.'
+    default: true
 runs:
   using: 'composite'
   steps:
@@ -18,7 +21,7 @@ runs:
         git fetch --tags
         $tags = git tag --sort=-v:refname
         
-        $iniPath = "${{ inputs.INI_FILE_PATH }}"
+        $iniPath = "${{ inputs.CONFIG_DIR_PATH }}/DefaultGame.ini"
         $content = Get-Content $iniPath -Raw       
         $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+)'
         if ($content -match $semVerPattern) {
@@ -64,4 +67,11 @@ runs:
           Write-Error "Version not found in INI file."
           exit 1
         }
+      shell: powershell
+    - name: Create BuildInfo Config
+      if: ${{ inputs.ADD_BUILD_INFO == 'true' }}
+      run: |
+        $buildInfoPath = "${{ inputs.CONFIG_DIR_PATH }}/BuildInfo.ini"
+        $buildId = "${{ env.BUILD_ID }}"
+        "[BuildInfo]`r`nBuildID=$buildId" | Out-File -FilePath $buildInfoPath -Encoding utf8
       shell: powershell
