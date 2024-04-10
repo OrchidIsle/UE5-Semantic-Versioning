@@ -29,45 +29,49 @@ runs:
         $tags = git tag --sort=-v:refname
         
         $iniPath = "${{ inputs.CONFIG_DIR_PATH }}/DefaultGame.ini"
-        $content = Get-Content $iniPath -Raw       
-        $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+)'
-        
+        $content = Get-Content $iniPath -Raw
+        # Updated to match both 0.0.0 and 0.0.0.0 formats
+        $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)'
         if ($content -match $semVerPattern) {
           $versionFromIni = $matches[1]
-          if ($isReleaseBuild -and $releaseTag) {
-            # Use release tag for version and build ID
-            $buildId = $releaseTag
-            $newVersion = $buildId -replace '^v', ''
-            $newVersion = $newVersion -replace '-.*$', '' # Strip any prefix or suffix
+          echo "VERSION=$versionFromIni" >> $env:GITHUB_ENV
+          
+          # Updated to match both version formats in tags
+          $semVerTagPattern = '^(v)?[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?'
+          $latestTag = $null
+          foreach ($tag in $tags) {
+            if ($tag -match $semVerTagPattern) {
+              $latestTag = $matches[0]
+              break
+            }
+          }
+          
+          if ($null -eq $latestTag) {
+            $latestTag = "0.0.0"
           } else {
-            $semVerTagPattern = '^(v)?[0-9]+\.[0-9]+\.[0-9]+$'
-            $latestTag = $null
-            foreach ($tag in $tags) {
-              if ($tag -match $semVerTagPattern) {
-                $latestTag = $matches[0]
-                break
-              }
-            }
+            $latestTag = $latestTag -replace '^v', ''
+          }
+          
+          $commitCount = & git rev-list --count "${latestTag}..HEAD"
+          
+          $newVersion = $versionFromIni
+          if ($latestTag -ne "0.0.0") {
+            # Convert to System.Version for comparison
+            $latestVersion = New-Object System.Version($latestTag)
+            $iniVersion = New-Object System.Version($versionFromIni)
             
-            if ($null -eq $latestTag) {
-              $latestTag = "0.0.0"
-            } else {
-              $latestTag = $latestTag -replace '^v', ''
-            }
-            
-            $commitCount = & git rev-list --count "${latestTag}..HEAD"
-            
-            $newVersion = $versionFromIni
-            if ($latestTag -ne "0.0.0") {
-              if ([Version]$latestTag -gt [Version]$versionFromIni) {
-                $newVersion = $latestTag
-              } elseif ([Version]$latestTag -eq [Version]$versionFromIni) {
-                # Auto-increment the patch number if versions match and commit count is more than 0
-                if ($commitCount -gt 0) {
-                  $versionParts = $newVersion -split '\.'
+            if ($latestVersion -gt $iniVersion) {
+              $newVersion = $latestTag
+            } elseif ($latestVersion -eq $iniVersion) {
+              # Auto-increment the patch or build number if versions match and commit count is more than 0
+              if ($commitCount -gt 0) {
+                $versionParts = $newVersion -split '\.'
+                if ($versionParts.Length -eq 4) { # For 0.0.0.0 format, increment the last part
+                  $versionParts[3] = [int]$versionParts[3] + 1
+                } else { # For 0.0.0 format, increment the patch number
                   $versionParts[2] = [int]$versionParts[2] + 1
-                  $newVersion = $versionParts -join '.'
                 }
+                $newVersion = $versionParts -join '.'
               }
             }
             $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
