@@ -14,10 +14,17 @@ inputs:
   ADD_BUILD_INFO:
     description: 'Add BuildInfo.ini (Contains build id) to config.'
     default: true
+  USE_RELEASE_BUILD:
+    description: 'Use release build (true or false). If true, uses the release tag as BUILD_ID.'
+    required: true
+    default: 'false'
 runs:
   using: 'composite'
   steps:
     - run: |
+        $isReleaseBuild = "${{ inputs.USE_RELEASE_BUILD }}" -eq 'true'
+        $releaseTag = $env:GITHUB_REF_NAME
+        
         git fetch --tags
         $tags = git tag --sort=-v:refname
         
@@ -67,9 +74,10 @@ runs:
                 $newVersion = $versionParts -join '.'
               }
             }
+            $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
           }
           
-          $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
+          echo "VERSION=$newVersion" >> $env:GITHUB_ENV
           echo "BUILD_ID=$buildId" >> $env:GITHUB_ENV
           Write-Host "Version set to: $newVersion"
           Write-Host "Build ID set to: $buildId"
