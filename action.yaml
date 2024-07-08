@@ -27,9 +27,12 @@ runs:
         
         git fetch --tags
         $tags = git tag --sort=-v:refname
+        Write-Host "Tags found: $tags"
         
         $iniPath = "${{ inputs.CONFIG_DIR_PATH }}/DefaultGame.ini"
         $content = Get-Content $iniPath -Raw
+        Write-Host "INI file content: $content"
+        
         $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)'
         $buildIdPattern = 'ProjectBuildId=([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)'
 
@@ -38,10 +41,12 @@ runs:
 
         if ($content -match $buildIdPattern) {
           $defaultBuildId = $matches[1]
+          Write-Host "Found ProjectBuildId in INI: $defaultBuildId"
         }
         
         if ($content -match $semVerPattern) {
           $defaultVersion = $matches[1]
+          Write-Host "Found ProjectVersion in INI: $defaultVersion"
         }
         
         if ($isReleaseBuild -and $releaseTag) {
@@ -69,6 +74,7 @@ runs:
           }
           
           $newVersion = $defaultVersion
+          Write-Host "Latest tag: $latestTag, Commit count: $commitCount"
           if ($latestTag -ne $defaultBuildId) {
             if ([Version]$latestTag -gt [Version]$defaultVersion) {
               $newVersion = $latestTag
