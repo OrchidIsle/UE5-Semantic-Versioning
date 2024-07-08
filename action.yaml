@@ -30,63 +30,68 @@ runs:
         
         $iniPath = "${{ inputs.CONFIG_DIR_PATH }}/DefaultGame.ini"
         $content = Get-Content $iniPath -Raw
-        # Updated to match both 0.0.0 and 0.0.0.0 formats
         $semVerPattern = 'ProjectVersion=([0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?)'
+        $buildIdPattern = 'ProjectBuildId=([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)'
+
+        $defaultBuildId = "0.0.0.0"
+        $defaultVersion = "0.0.0.0"
+
+        if ($content -match $buildIdPattern) {
+          $defaultBuildId = $matches[1]
+        }
         
         if ($content -match $semVerPattern) {
-          $versionFromIni = $matches[1]
-          if ($isReleaseBuild -and $releaseTag) {
-            # Use release tag for version and build ID, supporting both version formats
-            $buildId = $releaseTag
-            $newVersion = $buildId -replace '^v', ''
-            $newVersion = $newVersion -replace '-.*$', '' # Strip any prefix or suffix
-          } else {
-            # Updated to match both version formats in tags
-            $semVerTagPattern = '^(v)?[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$'
-            $latestTag = $null
-            foreach ($tag in $tags) {
-              if ($tag -match $semVerTagPattern) {
-                $latestTag = $matches[0]
-                break
-              }
+          $defaultVersion = $matches[1]
+        }
+        
+        if ($isReleaseBuild -and $releaseTag) {
+          # Use release tag for version and build ID, supporting both version formats
+          $buildId = $releaseTag
+          $newVersion = $buildId -replace '^v', ''
+          $newVersion = $newVersion -replace '-.*$', '' # Strip any prefix or suffix
+        } else {
+          # Updated to match both version formats in tags
+          $semVerTagPattern = '^(v)?[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$'
+          $latestTag = $null
+          foreach ($tag in $tags) {
+            if ($tag -match $semVerTagPattern) {
+              $latestTag = $matches[0]
+              break
             }
-            
-            if ($null -eq $latestTag) {
-              $latestTag = "0.0.0"
-            } else {
-              $latestTag = $latestTag -replace '^v', ''
-            }
-            
-            $commitCount = & git rev-list --count "${latestTag}..HEAD"
-            
-            $newVersion = $versionFromIni
-            if ($latestTag -ne "0.0.0") {
-              if ([Version]$latestTag -gt [Version]$versionFromIni) {
-                $newVersion = $latestTag
-              } elseif ([Version]$latestTag -eq [Version]$versionFromIni) {
-                # Auto-increment the appropriate version number based on format
-                if ($commitCount -gt 0) {
-                  $versionParts = $newVersion -split '\.'
-                  if ($versionParts.Length -eq 4) { # For 0.0.0.0 format, increment the last part
-                    $versionParts[3] = [int]$versionParts[3] + 1
-                  } else { # For 0.0.0 format, increment the patch number
-                    $versionParts[2] = [int]$versionParts[2] + 1
-                  }
-                  $newVersion = $versionParts -join '.'
-                }
-              }
-            }
-            $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
           }
           
-          echo "VERSION=$newVersion" >> $env:GITHUB_ENV
-          echo "BUILD_ID=$buildId" >> $env:GITHUB_ENV
-          Write-Host "Version set to: $newVersion"
-          Write-Host "Build ID set to: $buildId"
-        } else {
-          Write-Error "Version not found in INI file."
-          exit 1
+          if ($null -eq $latestTag) {
+            $latestTag = $defaultBuildId
+            $commitCount = 0
+          } else {
+            $latestTag = $latestTag -replace '^v', ''
+            $commitCount = & git rev-list --count "${latestTag}..HEAD"
+          }
+          
+          $newVersion = $defaultVersion
+          if ($latestTag -ne $defaultBuildId) {
+            if ([Version]$latestTag -gt [Version]$defaultVersion) {
+              $newVersion = $latestTag
+            } elseif ([Version]$latestTag -eq [Version]$defaultVersion) {
+              # Auto-increment the appropriate version number based on format
+              if ($commitCount -gt 0) {
+                $versionParts = $newVersion -split '\.'
+                if ($versionParts.Length -eq 4) { # For 0.0.0.0 format, increment the last part
+                  $versionParts[3] = [int]$versionParts[3] + 1
+                } else { # For 0.0.0 format, increment the patch number
+                  $versionParts[2] = [int]$versionParts[2] + 1
+                }
+                $newVersion = $versionParts -join '.'
+              }
+            }
+          }
+          $buildId = "$newVersion-${{ inputs.BUILD_PREFIX }}$commitCount"
         }
+        
+        echo "VERSION=$newVersion" >> $env:GITHUB_ENV
+        echo "BUILD_ID=$buildId" >> $env:GITHUB_ENV
+        Write-Host "Version set to: $newVersion"
+        Write-Host "Build ID set to: $buildId"
       shell: powershell
     - name: Create BuildInfo Config
       if: ${{ inputs.ADD_BUILD_INFO == 'true' }}
