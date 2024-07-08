@@ -53,11 +53,11 @@ runs:
             
             if ($null -eq $latestTag) {
               $latestTag = "0.0.0"
+              $commitCount = 0
             } else {
               $latestTag = $latestTag -replace '^v', ''
+              $commitCount = & git rev-list --count "${latestTag}..HEAD"
             }
-            
-            $commitCount = & git rev-list --count "${latestTag}..HEAD"
             
             $newVersion = $versionFromIni
             if ($latestTag -ne "0.0.0") {
